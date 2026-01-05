@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash Play: An Investing Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --color-bg-primary: #F0F0F0;
+            --color-bg-secondary: #FFFFFF;
+            --color-bg-tertiary: #E0E0E0;
+            --color-text-primary: #1a1a1a;
+            --color-text-muted: #2C3E50;
+            --color-text-dark: #1a1a1a;
+            --color-accent-blue: #2563eb;
+            --color-success-green: #16a34a;
+            --color-danger-red: #dc2626;
+            --color-accent-orange: #ea580c;
+            --color-border-light: #BDC3C7;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 1rem;
+            line-height: 1.6;
+            box-sizing: border-box;
+        }
+
+        .font-roboto-mono { font-family: 'Roboto Mono', monospace; }
+        .btn {
+            padding: 1rem 2.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            border: none;
+            font-size: 1.2rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn:hover { box-shadow: 0 8px 18px rgba(0,0,0,0.5); transform: translateY(-2px); }
+        .btn:active { transform: scale(0.98) translateY(0); box-shadow: 0 3px 7px rgba(0,0,0,0.2); }
+        .btn-primary { background-color: var(--color-accent-blue); color: #FFFFFF; }
+        .btn-primary:hover { background-color: #2980B9; }
+        .btn-secondary { background-color: var(--color-accent-orange); color: #FFFFFF; }
+        .btn-secondary:hover { background-color: #E67E22; }
+        .btn-danger { background-color: var(--color-danger-red); color: #FFFFFF; }
+        .btn-danger:hover { background-color: #C0392B; }
+        .btn-link { background: none; border: none; color: var(--color-accent-blue); padding: 0.5rem 1rem; font-size: 1rem; text-decoration: underline; box-shadow: none; }
+        .btn-link:hover { color: #2980B9; transform: none; box-shadow: none; }
+
+        .card {
+            background-color: var(--color-bg-secondary);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid var(--color-bg-tertiary);
+            width: 100%;
+            /* max-width: 700px; /* Removed to allow Tailwind classes to control width */
+        }
+        .metric-value { font-family: 'Roboto Mono', monospace; color: var(--color-accent-blue); font-weight: 700; font-size: 1.1rem; }
+        .profit { color: var(--color-success-green); font-weight: 700; }
+        .loss { color: var(--color-danger-red); font-weight: 700; }
+        .text-primary-accent { color: var(--color-accent-blue); }
+        .text-accent-orange { color: var(--color-accent-orange); }
+        .text-muted { color: var(--color-text-muted); }
+
+        .leaderboard-scores::-webkit-scrollbar { width: 8px; }
+        .leaderboard-scores::-webkit-scrollbar-track { background: var(--color-bg-tertiary); border-radius: 10px; }
+        .leaderboard-scores::-webkit-scrollbar-thumb { background: var(--color-text-muted); border-radius: 10px; }
+        .leaderboard-scores::-webkit-scrollbar-thumb:hover { background: var(--color-accent-blue); }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal.active { opacity: 1; visibility: visible; }
+        .modal-content {
+            background-color: var(--color-bg-secondary);
+            padding: 2.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.5);
+            width: 90%;
+            max-width: 550px;
+            border: 1px solid var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+        }
+        .progress-bar-container { 
+            width: 100%; 
+            background-color: var(--color-bg-tertiary); 
+            border-radius: 0.5rem; /* Increased border-radius */ 
+            overflow: hidden; 
+            height: 24px; /* Increased height */ 
+            border: 2px solid var(--color-accent-blue); /* Border color changed to accent blue */ 
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .progress-bar { 
+            height: 100%; 
+            background-color: #1d4ed8; /* More vibrant blue (Tailwind blue-700) */ 
+            width: 0%; 
+            transition: width 0.5s ease-in-out; 
+            border-radius: 0.375rem; /* Adjusted for new container height/radius */ 
+            background-image: linear-gradient(45deg, rgba(255,255,255,.2) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.2) 50%, rgba(255,255,255,.2) 75%, transparent 75%, transparent); 
+            background-size: 1rem 1rem; 
+            animation: progressBarStripes 1s linear infinite;
+        } 
+
+        @keyframes progressBarStripes {
+            0% { background-position: 1rem 0; }
+            100% { background-position: 0 0; }
+        }
+
+        input[type="number"], input[type="text"] {
+            background-color: var(--color-bg-tertiary);
+            border: 1px solid var(--color-text-muted);
+            color: var(--color-text-primary);
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        input[type="number"]:focus, input[type="text"]::-webkit-input-placeholder {
+            outline: none;
+            border-color: var(--color-accent-blue);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+        }
+
+        .tooltip { position: relative; display: inline-block; }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 220px;
+            background-color: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px 15px;
+            position: absolute;
+            z-index: 1;
+            bottom: 130%;
+            left: 50%;
+            margin-left: -110px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.85rem;
+            font-family: 'Poppins', sans-serif;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+            border: 1px solid var(--color-bg-secondary);
+        }
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: var(--color-bg-tertiary) transparent transparent transparent;
+        }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+
+        h1, h2, h3 { color: var(--color-text-primary); line-height: 1.3; font-weight: 700; }
+        header p, .card p { color: var(--color-text-muted); }
+        .dashboard-metric-label { color: var(--color-text-muted); font-size: 0.95rem; font-weight: 500; }
+
+        #results-screen .value-display { font-size: 2.8rem; font-weight: 700; margin-top: 0.5rem; }
+        #results-screen .result-box { background-color: var(--color-bg-secondary); padding: 1.5rem; border-radius: 0.5rem; border: 1px solid var(--color-bg-tertiary); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        #results-screen .result-label { font-size: 1.1rem; font-weight: 600; color: var(--color-accent-orange); margin-bottom: 0.5rem; }
+
+        #investments-summary { text-align: left; }
+        #investments-list .investment-item { background-color: var(--color-bg-tertiary); border: 1px solid var(--color-bg-secondary); padding: 1rem; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        #investments-list .investment-value { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.03em; }
+
+        #leaderboard-screen .investment-item { display: flex; justify-content: space-between; align-items: center; }
+
+        #floating-dashboard {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background-color: var(--color-bg-secondary);
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            z-index: 50;
+            border: 1px solid var(--color-border-light);
+            color: var(--color-text-primary);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease-out, visibility 0.3s ease-out, transform 0.3s ease-out;
+        }
+        #floating-dashboard p.text-muted { color: var(--color-text-dark); }
+        #floating-dashboard div { color: var(--color-text-dark); font-size: 1rem; }
+        #floating-dashboard.visible-floating-dashboard { opacity: 1; visibility: visible; transform: translateY(0); }
+        #floating-dashboard p, #floating-dashboard div { line-height: 1.3; margin-bottom: 0.25rem; }
+        #floating-dashboard p:last-child, #floating-dashboard div:last-child { margin-bottom: 0; }
+
+        #news-modal .modal-content { max-width: 500px; text-align: center; }
+        #news-modal h2 { color: var(--color-accent-orange); margin-bottom: 1rem; }
+        #news-modal p { color: var(--color-text-primary); margin-bottom: 1.5rem; }
+
+        #learn-modal .modal-content { max-width: 700px; text-align: left; max-height: 90vh; overflow-y: auto; }
+        #learn-modal h2 { color: var(--color-accent-blue); margin-bottom: 1.5rem; text-align: center; }
+        #learn-modal h3 { color: var(--color-accent-orange); margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1.5rem; border-bottom: 1px solid var(--color-bg-tertiary); padding-bottom: 0.5rem; }
+        #learn-modal p { color: var(--color-text-primary); margin-bottom: 1rem; }
+        #learn-modal ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        #learn-modal li { margin-bottom: 0.5rem; color: var(--color-text-muted); }
+        #learn-modal li strong { color: var(--color-text-primary); }
+        #learn-modal .glossary-term { font-weight: 600; color: var(--color-accent-blue); }
+
+        .badge {
+            background-color: var(--color-accent-blue);
+            color: #FFFFFF;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+        }
+
+        .highlight {
+            border: 2px solid yellow;
+            position: relative;
+            z-index: 10;
+        }
+        .tutorial-popup {
+            position: absolute;
+            background: white;
+            color: black;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            z-index: 20;
+            max-width: 300px;
+            display: none;
+        }
+
+        .text-success-green { color: var(--color-success-green); }
+        .text-danger-red { color: var(--color-danger-red); }
+        .border-red-200 { border-color: #fecaca; }
+
+        .game-progress-text {
+            font-size: 1.1rem; /* Increased font size */
+            font-weight: 700;   /* Bold text */
+            color: var(--color-text-dark); /* Darker text for better contrast */
+            margin-bottom: 0.6rem; /* Adjusted bottom margin, approx mb-2.5 */
+            text-shadow: 0 1px 1px rgba(0,0,0,0.15); /* Subtle text shadow */
+        }
+        .game-progress-text span {
+            color: var(--color-accent-orange); /* Changed to accent orange for numbers to stand out */
+            font-weight: 700; /* Ensure numbers are bold */
+        }
+
+        .progress-section {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(234, 88, 12, 0.1) 100%);
+            border: 2px solid var(--color-accent-blue);
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+            backdrop-filter: blur(10px);
+            margin-bottom: 0.5rem;
+        }
+
+        .skips-container {
+            background: linear-gradient(135deg, rgba(234, 88, 12, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+            border: 2px solid var(--color-accent-orange);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            margin-top: 0.5rem;
+            box-shadow: 0 3px 8px rgba(234, 88, 12, 0.2);
+            backdrop-filter: blur(5px);
+            width: fit-content;
+            margin-left: auto;
+        }
+
+        .skips-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-dark);
+            text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+            margin: 0;
+        }
+
+        .skips-number {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--color-accent-orange);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            padding: 0.1rem 0.3rem;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 0.25rem;
+            border: 1px solid rgba(234, 88, 12, 0.3);
+        }
+
+        /* Hard mode card styling */
+        .hard-mode-card {
+            max-width: 900px !important;
+            margin: 0 auto;
+        }
+
+        .hard-mode-card .hard-mode-metrics {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .hard-mode-card #metrics-section {
+            font-size: 1.1rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(234, 88, 12, 0.05) 100%);
+            border-radius: 0.75rem;
+            border: 1px solid var(--color-bg-tertiary);
+        }
+
+        .hard-mode-card #metrics-section h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: var(--color-accent-blue);
+        }
+
+        .hard-mode-card .metric-value {
+            font-size: 1.3rem;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div id="game-container">
+        <div id="main-game-screen" class="hidden">
+            <header>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold text-primary-accent">Cash Play Dashboard</h1>
+                    <div class="skips-display text-right space-y-1 w-full md:w-auto">
+                        <p class="text-md text-muted">Decision Period: <span id="current-date" class="font-roboto-mono text-primary-accent">May 1, 2020</span></p>
+                        <div class="skips-container flex items-center justify-end">
+                            <i class="fas fa-forward text-accent-orange mr-2"></i>
+                            <p class="skips-text">Skips Left: <span id="skips-left" class="skips-number">3</span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress-section mt-6">
+                    <p class="game-progress-text text-center">Game Progress (<span id="decisions-made-count">1</span>/<span id="total-decisions-count">5</span> decisions)</p>
+                    <div class="progress-bar-container">
+                        <div id="game-progress-bar" class="progress-bar"></div>
+                    </div>
+                </div>
+            </header>
+            <main id="stock-decision-area" class="flex flex-col items-center">
+                <div id="portfolio-pie-container" class="w-full max-w-2xl mx-auto mb-8">
+                    <canvas id="portfolio-pie-chart" height="120"></canvas>
+                </div>
+                <div id="all-stocks-list" class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl mb-8"></div>
+                <div class="flex justify-center mt-6">
+                    <button id="confirm-investments-btn" class="btn btn-primary px-8 py-3 text-lg">Confirm Investments</button>
+                </div>
+            </main>
+        </div>
+        <div id="results-screen" class="hidden card text-center p-6 md:p-8 md:max-w-5xl mx-auto">
+            <div class="flex items-center justify-center gap-3 mb-6">
+                <i class="fas fa-trophy text-3xl text-primary-accent"></i>
+                <h1 class="text-4xl font-bold text-center text-primary-accent">Your Investment Journey Results</h1>
+            </div>
+            <p class="text-lg text-muted mb-8 text-center">May 2020 - May 2025</p>
+            <div class="bg-gradient-to-r from-blue-100 to-purple-100 p-6 rounded-xl shadow-lg border border-blue-200 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-blue-200 transform hover:scale-[1.02] transition-all duration-200">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i class="fas fa-wallet text-2xl text-primary-accent"></i>
+                        <h2 class="text-xl font-bold text-primary-accent">Final Portfolio Value</h2>
+                    </div>
+                    <p id="final-portfolio-value" class="font-roboto-mono text-3xl font-bold"></p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-blue-200 transform hover:scale-[1.02] transition-all duration-200">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i class="fas fa-chart-line text-2xl text-primary-accent"></i>
+                        <h2 class="text-xl font-bold text-primary-accent">Total Return</h2>
+                    </div>
+                    <p id="total-return" class="font-roboto-mono text-3xl font-bold"></p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-blue-200 transform hover:scale-[1.02] transition-all duration-200">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i class="fas fa-chart-bar text-2xl text-primary-accent"></i>
+                        <h2 class="text-xl font-bold text-primary-accent">S&P 500 Return</h2>
+                    </div>
+                    <p id="sp500-return" class="font-roboto-mono text-3xl font-bold"></p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-blue-200 transform hover:scale-[1.02] transition-all duration-200">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i class="fas fa-balance-scale text-2xl text-primary-accent"></i>
+                        <h2 class="text-xl font-bold text-primary-accent">VS S&P 500</h2>
+                    </div>
+                    <p id="performance-vs-sp500" class="font-roboto-mono text-3xl font-bold"></p>
+                </div>
+            </div>
+            </div>
+            <div id="investments-summary" class="mb-8 text-left">
+                <div class="flex items-center justify-center gap-3 mb-6">
+                    <i class="fas fa-chart-line text-3xl text-primary-accent"></i>
+                    <h3 class="text-3xl font-bold text-center text-primary-accent">Your Investment Portfolio</h3>
+                </div>
+                <div class="bg-gradient-to-r from-blue-100 to-purple-100 p-6 rounded-xl shadow-lg border border-blue-200">
+                    <div id="investments-list" class="space-y-5 max-h-96 overflow-y-auto leaderboard-scores p-4 rounded-lg">
+                        <!-- Investment items will be populated here -->
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+            <button id="play-again-btn" class="btn btn-secondary px-6 py-2.5">Play Again</button>
+            </div>
+            <div class="text-center mt-6">
+                 <button id="view-leaderboards-btn-results" class="btn btn-primary px-8 py-3 text-lg">View Leaderboards</button>
+            </div>
+        </div>
+        <div id="difficulty-screen" class="hidden card text-center p-6 md:p-8 max-w-3xl mx-auto">
+            <div class="flex items-center justify-center gap-3 mb-6">
+                <i class="fas fa-gamepad text-3xl text-primary-accent"></i>
+                <h1 class="text-4xl font-bold text-center text-primary-accent">Choose Difficulty Level</h1>
+            </div>
+            <p class="text-lg text-muted mb-8 text-center">Select your preferred challenge level</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-blue-200 transform hover:scale-[1.02] transition-all duration-200">
+                    <div class="flex items-center justify-center gap-3 mb-4">
+                        <i class="fas fa-seedling text-3xl text-success-green"></i>
+                        <h2 class="text-2xl font-bold text-success-green">Easy Mode</h2>
+                    </div>
+                    <ul class="text-left text-muted mb-6 space-y-2">
+                        <li><i class="fas fa-check text-success-green mr-2"></i>Company descriptions provided</li>
+                        <li><i class="fas fa-check text-success-green mr-2"></i>Historical price charts (2015-2020)</li>
+                        <li><i class="fas fa-check text-success-green mr-2"></i>All financial metrics visible</li>
+                        <li><i class="fas fa-check text-success-green mr-2"></i>Tooltips for metric explanations</li>
+                    </ul>
+                    <button id="easy-mode-btn" class="btn btn-primary w-full px-6 py-3">Play Easy Mode</button>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-red-200 transform hover:scale-[1.02] transition-all duration-200">
+                    <div class="flex items-center justify-center gap-3 mb-4">
+                        <i class="fas fa-fire text-3xl text-danger-red"></i>
+                        <h2 class="text-2xl font-bold text-danger-red">Hard Mode</h2>
+                    </div>
+                    <ul class="text-left text-muted mb-6 space-y-2">
+                        <li><i class="fas fa-times text-danger-red mr-2"></i>No company descriptions</li>
+                        <li><i class="fas fa-times text-danger-red mr-2"></i>No historical price charts</li>
+                        <li><i class="fas fa-check text-success-green mr-2"></i>Only sector and metrics visible</li>
+                        <li><i class="fas fa-question text-accent-orange mr-2"></i>Pure analysis challenge</li>
+                    </ul>
+                    <button id="hard-mode-btn" class="btn btn-danger w-full px-6 py-3">Play Hard Mode</button>
+                </div>
+            </div>
+            
+            <p class="text-sm text-muted text-center">You can change difficulty at any time by starting a new game</p>
+        </div>
+        <div id="leaderboard-screen" class="hidden card w-full max-w-md mx-auto p-6 md:p-8">
+            <h1 class="text-3xl font-bold mb-6 text-center">Leaderboard</h1> 
+            <div id="leaderboard-scores" class="space-y-2 max-h-96 overflow-y-auto"></div>
+            <button id="back-to-welcome-btn" class="btn btn-secondary mt-8 w-full px-6 py-2.5">Back to Welcome</button>
+        </div>
+    </div>
+    <div id="invest-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Invest in Stock</h2>
+            <p class="mb-1 text-muted">Available Cash: <span id="modal-cash-available" class="font-roboto-mono text-primary-accent"></span></p>
+            <p class="mb-4 text-muted">Stock Price (May 2020): <span id="modal-stock-price" class="font-roboto-mono text-primary-accent"></span></p>
+            <div>
+                <label for="investment-amount" class="block mb-1 text-sm text-muted">Amount to Invest ($):</label>
+                <input type="number" id="investment-amount" placeholder="e.g., 1000" class="w-full p-2.5 rounded mb-1">
+                <p class="text-xs text-muted">Remaining Cash: <span id="remaining-cash-after-investment" class="font-roboto-mono text-primary-accent"></span></p>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="cancel-investment-btn" class="btn btn-danger px-5 py-2">Cancel</button>
+                <button id="confirm-investment-btn" class="btn btn-primary px-5 py-2">Confirm Investment</button>
+            </div>
+        </div>
+    </div>
+    <div id="message-modal" class="modal">
+        <div class="modal-content text-center">
+            <h2 id="message-modal-title" class="text-2xl font-bold mb-4">Notification</h2>
+            <p id="message-modal-text" class="mb-6 text-muted"></p>
+            <button id="message-modal-close-btn" class="btn btn-primary px-8 py-2.5">OK</button>
+        </div>
+    </div>
+    <div id="news-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="news-modal-title" class="text-2xl font-bold mb-4">Market News</h2>
+            <p id="news-modal-text" class="mb-6"></p>
+            <div class="text-center">
+                <button id="news-modal-close-btn" class="btn btn-primary px-8 py-2.5">Continue</button>
+            </div>
+        </div>
+    </div>
+    <div id="learn-modal" class="modal">
+        <div class="modal-content">
+            <h2>Investing Learning Center</h2>
+            <h3>How to Play</h3>
+            <p>Welcome, aspiring investor! Cash Play is a simple game where you make investment decisions and see their long-term impact.</p>
+            <p>Your goal is to grow your initial cash ($10,000) by making smart investment choices and outperform the S&P 500 over a 5-year period (May 2020 - May 2025).</p>
+            <p>For each of the 5 decision periods, you will see a stock opportunity with its financial metrics and a historical price chart. You can choose to:</p>
+            <ul>
+                <li><strong>Invest:</strong> Put a portion of your cash into the stock.</li>
+                <li><strong>Skip:</strong> Move to the next opportunity. You have <strong>3 skips</strong> per game.</li>
+            </ul>
+            <p>Consider the metrics and historical performance carefully, and pay attention to any market news!</p>
+            <h3>Financial Glossary</h3>
+            <p>Understand the key metrics shown for each stock:</p>
+            <ul>
+                <li><strong class="glossary-term">PE Ratio (Price-to-Earnings Ratio):</strong> How much investors pay per dollar of earnings. 15-25 is reasonable, above 30 might be expensive.</li>
+                <li><strong class="glossary-term">PS Ratio (Price-to-Sales Ratio):</strong> How much investors pay per dollar of sales. Lower values might suggest undervaluation.</li>
+                <li><strong class="glossary-term">Revenue Growth:</strong> Year-over-year sales increase. 5-10% is solid, 10-20% is strong.</li>
+                <li><strong class="glossary-term">Market Cap:</strong> Total value of outstanding shares, reflecting company size.</li>
+                <li><strong class="glossary-term">Profit Margin:</strong> Percentage of revenue kept as profit. Above 10% is good, above 20% is excellent.</li>
+            </ul>
+            <h3>Basic Investing Tips</h3>
+            <ul>
+                <li><strong>Diversification:</strong> Spread investments to reduce risk.</li>
+                <li><strong>Long-Term Perspective:</strong> Focus on long-term potential.</li>
+                <li><strong>Research:</strong> Use metrics and news to assess companies.</li>
+                <li><strong>Risk vs. Reward:</strong> Balance high-growth potential with stability.</li>
+            </ul>
+            <div class="tutorial-navigation">
+                <button id="learn-modal-close-btn" class="btn btn-primary px-8 py-2.5">Close</button>
+            </div>
+        </div>
+    </div>
+    <div id="leaderboard-popup" class="modal">
+        <div class="modal-content text-center">
+            <div class="flex items-center justify-center gap-3 mb-6">
+                <i class="fas fa-trophy text-3xl text-primary-accent"></i>
+                <h2 class="text-2xl font-bold text-primary-accent">Game Complete!</h2>
+            </div>
+            <p class="text-lg text-muted mb-6">Enter your name to save your score to the leaderboard</p>
+            <div class="mb-4">
+                <input type="text" id="popup-player-name" placeholder="Enter your name" class="text-center mb-3 p-2.5 rounded w-full max-w-sm mx-auto">
+            </div>
+            <div class="flex justify-center">
+                <button id="save-to-leaderboard-btn" class="btn btn-primary px-6 py-2.5">Save Score</button>
+            </div>
+        </div>
+    </div>
+    <div id="floating-dashboard" class="hidden-floating-dashboard">
+        <p class="text-sm font-semibold mb-1">Your Current Stats:</p>
+        <div class="text-md mb-0.5">Available Cash: <span id="floating-cash-value" class="font-roboto-mono text-primary-accent text-lg">$0.00</span></div>
+        <div class="text-md mb-0.5">Decisions Made: <span id="floating-decisions-made" class="font-roboto-mono text-primary-accent text-lg">0</span></div>
+        <div class="text-md">Skips Left: <span id="floating-skips-left" class="font-roboto-mono text-primary-accent text-lg">3</span></div>
+    </div>
+    <div id="tutorial-popup" class="tutorial-popup"></div>
+
+    <script>
+        const STOCKS_DATA = [
+            {
+                id: 'AAPL',
+                companyName: 'Apple Inc.',
+                ticker: 'AAPL',
+                sector: 'Technology',
+                priceMay2020: 77.26,
+                price2025: 202.09,
+                metrics: {
+                    peRatio: 26.97,
+                    psRatio: 5.78,
+                    revenueGrowth: 3.3,
+                    marketCap: '1.345T',
+                    profitMargins: 21.3,
+                    description: 'Makes popular electronics like iPhones, iPads, and Mac computers, plus apps and services.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 24.29 },
+                    { date: '2016-01', price: 26.79 },
+                    { date: '2017-01', price: 28.40 },
+                    { date: '2018-01', price: 42.55 },
+                    { date: '2019-01', price: 39.33 },
+                    { date: '2020-01', price: 73.41 },
+                    { date: '2020-05', price: 77.26 }
+                ]
+            },
+            {
+                id: 'MSFT',
+                companyName: 'Microsoft Corp.',
+                ticker: 'MSFT',
+                sector: 'Technology',
+                priceMay2020: 175.57,
+                price2025: 452.57,
+                metrics: {
+                    peRatio: 25.89,
+                    psRatio: 9.1,
+                    revenueGrowth: 8.9,
+                    marketCap: '1.343T',
+                    profitMargins: 31.0,
+                    description: 'Creates software like Windows and Office, cloud services, and devices like Xbox.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 46.45 },
+                    { date: '2016-01', price: 50.66 },
+                    { date: '2017-01', price: 62.58 },
+                    { date: '2018-01', price: 86.57 },
+                    { date: '2019-01', price: 101.62 },
+                    { date: '2020-01', price: 160.62 },
+                    { date: '2020-05', price: 175.57 }
+                ]
+            },
+            {
+                id: 'AMZN',
+                companyName: 'Amazon.com, Inc.',
+                ticker: 'AMZN',
+                sector: 'Consumer Discretionary',
+                priceMay2020: 122.12,
+                price2025: 204.07,
+                metrics: {
+                    peRatio: 106.0,
+                    psRatio: 4.34,
+                    revenueGrowth: 29.3,
+                    marketCap: '1.243T',
+                    profitMargins: 5.5,
+                    description: 'Runs a huge online store and offers cloud computing services for businesses.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 308.52 },
+                    { date: '2016-01', price: 525.58 },
+                    { date: '2017-01', price: 750.50 },
+                    { date: '2018-01', price: 1200.54 },
+                    { date: '2019-01', price: 1544.28 },
+                    { date: '2020-01', price: 1881.52 },
+                    { date: '2020-05', price: 122.12 }
+                ]
+            },
+            {
+                id: 'GOOGL',
+                companyName: 'Alphabet Inc. (Class A)',
+                ticker: 'GOOGL',
+                sector: 'Communication Services',
+                priceMay2020: 71.34,
+                price2025: 163.98,
+                metrics: {
+                    peRatio: 31.0,
+                    psRatio: 6.30,
+                    revenueGrowth: 19.5,
+                    marketCap: '0.980T',
+                    profitMargins: 22.0,
+                    description: 'Owns Google, YouTube, and other internet services, focusing on search and ads.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 30.46 },
+                    { date: '2016-01', price: 35.24 },
+                    { date: '2017-01', price: 55.36 },
+                    { date: '2018-01', price: 79.45 },
+                    { date: '2019-01', price: 105.60 },
+                    { date: '2020-01', price: 134.96 },
+                    { date: '2020-05', price: 71.34 }
+                ]
+            },
+            {
+                id: 'FB',
+                companyName: 'Meta Platforms, Inc.',
+                ticker: 'FB',
+                sector: 'Communication Services',
+                priceMay2020: 224.03,
+                price2025: 637.10,
+                metrics: {
+                    peRatio: 27.6,
+                    psRatio: 8.64,
+                    revenueGrowth: 36.8,
+                    marketCap: '0.645T',
+                    profitMargins: 33.9,
+                    description: 'Runs social media platforms like Facebook and Instagram, earning money from ads.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 75.64 },
+                    { date: '2016-01', price: 103.88 },
+                    { date: '2017-01', price: 113.15 },
+                    { date: '2018-01', price: 178.56 },
+                    { date: '2019-01', price: 137.93 },
+                    { date: '2020-01', price: 206.26 },
+                    { date: '2020-05', price: 224.03 }
+                ]
+            },
+            {
+                id: 'NVDA',
+                companyName: 'NVIDIA Corporation',
+                ticker: 'NVDA',
+                sector: 'Technology',
+                priceMay2020: 8.84,
+                price2025: 130.10,
+                metrics: {
+                    peRatio: 28.3,
+                    psRatio: 4.81,
+                    revenueGrowth: 50.0,
+                    marketCap: '0.220T',
+                    profitMargins: 21.5,
+                    description: 'Designs chips for gaming, AI, and computers.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 3.80 },
+                    { date: '2016-01', price: 3.64 },
+                    { date: '2017-01', price: 18.47 },
+                    { date: '2018-01', price: 48.29 },
+                    { date: '2019-01', price: 21.71 },
+                    { date: '2020-01', price: 13.72 },
+                    { date: '2020-05', price: 8.84 }
+                ]
+            },
+            {
+                id: 'V',
+                companyName: 'Visa Inc.',
+                ticker: 'V',
+                sector: 'Financials',
+                priceMay2020: 195.0,
+                price2025: 350.0,
+                metrics: {
+                    peRatio: 40.0,
+                    psRatio: 10.0,
+                    revenueGrowth: 7.0,
+                    marketCap: '0.250T',
+                    profitMargins: 50.0,
+                    description: 'Processes credit card payments worldwide.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 80.0 },
+                    { date: '2016-01', price: 88.0 },
+                    { date: '2017-01', price: 92.0 },
+                    { date: '2018-01', price: 124.0 },
+                    { date: '2019-01', price: 127.0 },
+                    { date: '2020-01', price: 173.0 },
+                    { date: '2020-05', price: 180.0 }
+                ]
+            },
+            {
+                id: 'JNJ',
+                companyName: 'Johnson & Johnson',
+                ticker: 'JNJ',
+                sector: 'Healthcare',
+                priceMay2020: 170.0,
+                price2025: 180.0,
+                metrics: {
+                    peRatio: 25.0,
+                    psRatio: 5.0,
+                    revenueGrowth: 3.0,
+                    marketCap: '0.350T',
+                    profitMargins: 22.0,
+                    description: 'Makes medicines, medical devices, and health products like baby shampoo.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 96.0 },
+                    { date: '2016-01', price: 115.0 },
+                    { date: '2017-01', price: 122.0 },
+                    { date: '2018-01', price: 138.0 },
+                    { date: '2019-01', price: 132.0 },
+                    { date: '2020-01', price: 149.0 },
+                    { date: '2020-05', price: 150.0 }
+                ]
+            },
+            {
+                id: 'WMT',
+                companyName: 'Walmart Inc.',
+                ticker: 'WMT',
+                sector: 'Consumer Staples',
+                priceMay2020: 41.0,
+                price2025: 96.0,
+                metrics: {
+                    peRatio: 24.0,
+                    psRatio: 0.5,
+                    revenueGrowth: 3.0,
+                    marketCap: '0.350T',
+                    profitMargins: 2.5,
+                    description: 'Runs a chain of stores selling groceries and everyday items.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 72.0 },
+                    { date: '2016-01', price: 64.0 },
+                    { date: '2017-01', price: 68.0 },
+                    { date: '2018-01', price: 88.0 },
+                    { date: '2019-01', price: 92.0 },
+                    { date: '2020-01', price: 118.0 },
+                    { date: '2020-05', price: 130.0 }
+                ]
+            },
+            {
+                id: 'MA',
+                companyName: 'Mastercard Inc.',
+                ticker: 'MA',
+                sector: 'Financials',
+                priceMay2020: 300.0,
+                price2025: 560.0,
+                metrics: {
+                    peRatio: 50.0,
+                    psRatio: 18.0,
+                    revenueGrowth: 12.0,
+                    marketCap: '0.180T',
+                    profitMargins: 46.0,
+                    description: 'Handles credit card transactions globally.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 86.0 },
+                    { date: '2016-01', price: 93.0 },
+                    { date: '2017-01', price: 97.0 },
+                    { date: '2018-01', price: 165.0 },
+                    { date: '2019-01', price: 201.0 },
+                    { date: '2020-01', price: 280.0 },
+                    { date: '2020-05', price: 260.0 }
+                ]
+            },
+            {
+                id: 'INTC',
+                companyName: 'Intel Corporation',
+                ticker: 'INTC',
+                sector: 'Technology',
+                priceMay2020: 60.0,
+                price2025: 50.0,
+                metrics: {
+                    peRatio: 10.0,
+                    psRatio: 3.0,
+                    revenueGrowth: 4.0,
+                    marketCap: '0.210T',
+                    profitMargins: 27.0,
+                    description: 'Produces computer chips for PCs and servers.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 35.0 },
+                    { date: '2016-01', price: 35.0 },
+                    { date: '2017-01', price: 35.0 },
+                    { date: '2018-01', price: 47.0 },
+                    { date: '2019-01', price: 43.0 },
+                    { date: '2020-01', price: 56.0 },
+                    { date: '2020-05', price: 60.0 }
+                ]
+            },
+            {
+                id: 'NESN',
+                companyName: 'Nestlé S.A.',
+                ticker: 'NESN',
+                sector: 'Consumer Staples',
+                priceMay2020: 108.0,
+                price2025: 109.0,
+                metrics: {
+                    peRatio: 24.0,
+                    psRatio: 3.0,
+                    revenueGrowth: 2.0,
+                    marketCap: '0.300T',
+                    profitMargins: 15.0,
+                    description: 'Produces food and drinks like Nescafé coffee and KitKat chocolate.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 64.0 },
+                    { date: '2016-01', price: 75.0 },
+                    { date: '2017-01', price: 82.0 },
+                    { date: '2018-01', price: 80.0 },
+                    { date: '2019-01', price: 77.0 },
+                    { date: '2020-01', price: 75.0 },
+                    { date: '2020-05', price: 95.0 }
+                ]
+            },
+            {
+                id: 'BABA',
+                companyName: 'Alibaba Group Holding Ltd.',
+                ticker: 'BABA',
+                sector: 'Consumer Discretionary',
+                priceMay2020: 195.0,
+                price2025: 95.0,
+                metrics: {
+                    peRatio: 30.0,
+                    psRatio: 8.0,
+                    revenueGrowth: 50.0,
+                    marketCap: '0.500T',
+                    profitMargins: 30.0,
+                    description: 'Operates online shopping platforms and cloud services in Asia.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 86.0 },
+                    { date: '2016-01', price: 65.0 },
+                    { date: '2017-01', price: 95.0 },
+                    { date: '2018-1', price: 186.0 },
+                    { date: '2019-01', price: 167.0 },
+                    { date: '2020-01', price: 225.0 },
+                    { date: '2020-05', price: 195.0 }
+                ]
+            },
+            {
+                id: 'TSM',
+                companyName: 'Taiwan Semiconductor Manufacturing Co.',
+                ticker: 'TSM',
+                sector: 'Technology',
+                priceMay2020: 107.0,
+                price2025: 416.23,
+                metrics: {
+                    peRatio: 20.0,
+                    psRatio: 7.0,
+                    revenueGrowth: 12.4,
+                    marketCap: '0.330T',
+                    profitMargins: 38.0,
+                    description: "Makes chips for other tech companies' products."
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 25.0 },
+                    { date: '2016-01', price: 25.0 },
+                    { date: '2017-01', price: 42.0 },
+                    { date: '2018-01', price: 34.0 },
+                    { date: '2019-01', price: 34.0 },
+                    { date: '2020-01', price: 87.0 },
+                    { date: '2020-05', price: 107.0 }
+                ]
+            },
+            {
+                id: 'TCEHY',
+                companyName: 'Tencent Holdings Ltd.',
+                ticker: '0700.HK',
+                sector: 'Communication Services',
+                priceMay2020: 44.87,
+                price2025: 51.15,
+                metrics: {
+                    peRatio: 30.0,
+                    psRatio: 10.0,
+                    revenueGrowth: 25.0,
+                    marketCap: '0.550T',
+                    profitMargins: 30.0,
+                    description: 'Offers social media, games, and payment apps in Asia.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 7.95 },
+                    { date: '2016-01', price: 8.33 },
+                    { date: '2017-01', price: 10.51 },
+                    { date: '2018-01', price: 6.28 },
+                    { date: '2019-01', price: 5.25 },
+                    { date: '2020-01', price: 6.41 },
+                    { date: '2020-05', price: 7.69 }
+                ]
+            },
+            {
+                id: 'BAC',
+                companyName: 'Bank of America Corp.',
+                ticker: 'BAC',
+                sector: 'Financials',
+                priceMay2020: 32.0,
+                price2025: 40.0,
+                metrics: {
+                    peRatio: 14.0,
+                    psRatio: 3.0,
+                    revenueGrowth: 3.0,
+                    marketCap: '0.350T',
+                    profitMargins: 20.0,
+                    description: 'Provides banking and investment services to customers.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 17.0 },
+                    { date: '2016-01', price: 14.0 },
+                    { date: '2017-01', price: 22.0 },
+                    { date: '2018-01', price: 32.0 },
+                    { date: '2019-01', price: 28.0 },
+                    { date: '2020-01', price: 36.0 },
+                    { date: '2020-05', price: 32.0 }
+                ]
+            },
+            {
+                id: 'XOM',
+                companyName: 'Exxon Mobil Corporation',
+                ticker: 'XOM',
+                sector: 'Energy',
+                priceMay2020: 45.0,
+                price2025: 87.30,
+                metrics: {
+                    peRatio: 16.0,
+                    psRatio: 0.75,
+                    revenueGrowth: -6.1,
+                    marketCap: '0.150T',
+                    profitMargins: -12.3,
+                    description: 'Global oil & gas major with upstream, downstream, and chemicals operations.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 93.0 },
+                    { date: '2016-01', price: 82.0 },
+                    { date: '2017-01', price: 88.0 },
+                    { date: '2018-01', price: 84.0 },
+                    { date: '2019-01', price: 86.0 },
+                    { date: '2020-01', price: 60.0 },
+                    { date: '2020-05', price: 45.0 }
+                ]
+            },
+            {
+                id: 'JPM',
+                companyName: 'JPMorgan Chase & Co.',
+                ticker: 'JPM',
+                sector: 'Financials',
+                priceMay2020: 100.0,
+                price2025: 242.00,
+                metrics: {
+                    peRatio: 11.0,
+                    psRatio: 2.0,
+                    revenueGrowth: 5.2,
+                    marketCap: '0.225T',
+                    profitMargins: 21.1,
+                    description: 'Largest US bank by market value offering banking, investment and financial services.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 50.87 },
+                    { date: '2016-01', price: 68.44 },
+                    { date: '2017-01', price: 86.75 },
+                    { date: '2018-01', price: 81.01 },
+                    { date: '2019-01', price: 119.29 },
+                    { date: '2020-01', price: 115.0 },
+                    { date: '2020-05', price: 100.0 }
+                ]
+            },
+            {
+                id: 'CVX',
+                companyName: 'Chevron Corporation',
+                ticker: 'CVX',
+                sector: 'Energy',
+                priceMay2020: 75.0,
+                price2025: 102.00,
+                metrics: {
+                    peRatio: 25.0,
+                    psRatio: 0.9,
+                    revenueGrowth: -6.2,
+                    marketCap: '0.125T',
+                    profitMargins: -7.2,
+                    description: 'Major integrated oil company with global exploration and refining operations.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 78.94 },
+                    { date: '2016-01', price: 66.85 },
+                    { date: '2017-01', price: 105.98 },
+                    { date: '2018-01', price: 104.69 },
+                    { date: '2019-01', price: 123.73 },
+                    { date: '2020-01', price: 95.0 },
+                    { date: '2020-05', price: 75.0 }
+                ]
+            },
+            {
+                id: 'T',
+                companyName: 'AT&T Inc.',
+                ticker: 'T',
+                sector: 'Communication Services',
+                priceMay2020: 29.0,
+                price2025: 32.48,
+                metrics: {
+                    peRatio: 15.0,
+                    psRatio: 1.17,
+                    revenueGrowth: 3.2,
+                    marketCap: '0.200T',
+                    profitMargins: -3.1,
+                    description: 'Major US telecom provider offering wireless and wireline services nationwide.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 33.20 },
+                    { date: '2016-01', price: 39.98 },
+                    { date: '2017-01', price: 37.20 },
+                    { date: '2018-01', price: 38.27 },
+                    { date: '2019-01', price: 39.44 },
+                    { date: '2020-01', price: 32.0 },
+                    { date: '2020-05', price: 29.0 }
+                ]
+            },
+            {
+                id: 'PG',
+                companyName: 'Procter & Gamble Co.',
+                ticker: 'PG',
+                sector: 'Consumer Staples',
+                priceMay2020: 138.0,
+                price2025: 195.96,
+                metrics: {
+                    peRatio: 25.0,
+                    psRatio: 3.4,
+                    revenueGrowth: 0.1,
+                    marketCap: '0.275T',
+                    profitMargins: 18.5,
+                    description: 'Global consumer goods giant with brands in home care, hygiene, and personal products.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 79.86 },
+                    { date: '2016-01', price: 69.08 },
+                    { date: '2017-01', price: 93.83 },
+                    { date: '2018-01', price: 97.91 },
+                    { date: '2019-01', price: 122.49 },
+                    { date: '2020-01', price: 130.0 },
+                    { date: '2020-05', price: 138.0 }
+                ]
+            },
+            {
+                id: 'KO',
+                companyName: 'The Coca-Cola Company',
+                ticker: 'KO',
+                sector: 'Consumer Staples',
+                priceMay2020: 45.0,
+                price2025: 64.0,
+                metrics: {
+                    peRatio: 30.0,
+                    psRatio: 2.8,
+                    revenueGrowth: -5.7,
+                    marketCap: '0.180T',
+                    profitMargins: 23.5,
+                    description: 'Leading global beverage company with iconic brands and strong profit margins.'
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 42.72 },
+                    { date: '2016-01', price: 42.05 },
+                    { date: '2017-01', price: 43.10 },
+                    { date: '2018-01', price: 44.30 },
+                    { date: '2019-01', price: 50.52 },
+                    { date: '2020-01', price: 48.0 },
+                    { date: '2020-05', price: 45.0 }
+                ]
+            },
+            {
+                id: 'TM',
+                companyName: 'Toyota Motor Corporation',
+                ticker: 'TM',
+                sector: 'Consumer Discretionary',
+                priceMay2020: 55.0,
+                price2025: 79.20,
+                metrics: {
+                    peRatio: 15.0,
+                    psRatio: 0.5,
+                    revenueGrowth: 3.0,
+                    marketCap: '0.200T',
+                    profitMargins: 8.0,
+                    description: "Japan's largest automaker and global industrial leader with efficient operations."
+                },
+                historicalPrices: [
+                    { date: '2015-01', price: 64.0 },
+                    { date: '2016-01', price: 69.0 },
+                    { date: '2017-01', price: 75.0 },
+                    { date: '2018-01', price: 65.0 },
+                    { date: '2019-01', price: 69.0 },
+                    { date: '2020-01', price: 64.0 },
+                    { date: '2020-05', price: 55.0 }
+                ]
+            }
+        ];
+
+        STOCKS_DATA.forEach(stock => {
+            stock.fiveYearGrowthPercent = ((stock.price2025 - stock.priceMay2020) / stock.priceMay2020) * 100;
+            if (stock.historicalPrices && stock.historicalPrices.length > 0) {
+                const firstPrice = stock.historicalPrices[0].price;
+                const may2020Price = stock.priceMay2020;
+                stock.historicalPerformanceTo2020 = ((may2020Price - firstPrice) / firstPrice) * 100;
+            } else {
+                stock.historicalPerformanceTo2020 = 0;
+            }
+        });
+
+        const SP500_PERFORMANCE = { may2020_start_value: 2830.71, current2025_end_value: 5048.42 };
+        const INITIAL_CASH = 10000;
+        const INITIAL_SKIPS = 3;
+        const TOTAL_DECISIONS = 5;
+
+        let gameState = {};
+        let originalMessageModalCloseAction = null;
+        let currentStockChart = null;
+
+        const mainGameScreen = document.getElementById('main-game-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const difficultyScreen = document.getElementById('difficulty-screen');
+        const leaderboardScreen = document.getElementById('leaderboard-screen');
+        const currentDateEl = document.getElementById('current-date');
+        const skipsLeftEl = document.getElementById('skips-left');
+        const stockCardContainer = document.getElementById('stock-card-container');
+        const investBtn = document.getElementById('invest-btn');
+        const skipBtn = document.getElementById('skip-btn');
+        const decisionsMadeCountEl = document.getElementById('decisions-made-count');
+        const totalDecisionsCountEl = document.getElementById('total-decisions-count');
+        const gameProgressBarEl = document.getElementById('game-progress-bar');
+        const investModal = document.getElementById('invest-modal');
+        const modalCashAvailable = document.getElementById('modal-cash-available');
+        const modalStockPrice = document.getElementById('modal-stock-price');
+        const investmentAmountInput = document.getElementById('investment-amount');
+        const remainingCashAfterInvestmentEl = document.getElementById('remaining-cash-after-investment');
+        const cancelInvestmentBtn = document.getElementById('cancel-investment-btn');
+        const confirmInvestmentBtn = document.getElementById('confirm-investment-btn');
+        const messageModal = document.getElementById('message-modal');
+        const messageModalTitle = document.getElementById('message-modal-title');
+        const messageModalText = document.getElementById('message-modal-text');
+        const messageModalCloseBtn = document.getElementById('message-modal-close-btn');
+        const newsModal = document.getElementById('news-modal');
+        const newsModalTitle = document.getElementById('news-modal-title');
+        const newsModalText = document.getElementById('news-modal-text');
+        const newsModalCloseBtn = document.getElementById('news-modal-close-btn');
+        const finalPortfolioValueEl = document.getElementById('final-portfolio-value');
+        const totalReturnEl = document.getElementById('total-return');
+        const sp500ReturnEl = document.getElementById('sp500-return');
+        const performanceVsSp500El = document.getElementById('performance-vs-sp500');
+        const investmentsListEl = document.getElementById('investments-list');
+        const playAgainBtn = document.getElementById('play-again-btn');
+        const leaderboardScoresEl = document.getElementById('leaderboard-scores');
+        const backToWelcomeBtn = document.getElementById('back-to-welcome-btn');
+        const floatingDashboard = document.getElementById('floating-dashboard');
+        const floatingCashValue = document.getElementById('floating-cash-value');
+        const floatingDecisionsMade = document.getElementById('floating-decisions-made');
+        const floatingSkipsLeft = document.getElementById('floating-skips-left');
+        const learnModal = document.getElementById('learn-modal');
+        const learnModalCloseBtn = document.getElementById('learn-modal-close-btn');
+        const easyModeBtn = document.getElementById('easy-mode-btn');
+        const hardModeBtn = document.getElementById('hard-mode-btn');
+        const leaderboardPopup = document.getElementById('leaderboard-popup');
+        const popupPlayerNameInput = document.getElementById('popup-player-name');
+        const skipLeaderboardBtn = document.getElementById('skip-leaderboard-btn');
+        const saveToLeaderboardBtn = document.getElementById('save-to-leaderboard-btn');
+        const viewLeaderboardsBtnResults = document.getElementById('view-leaderboards-btn-results');
+
+        // Game state with difficulty tracking
+        let gameDifficulty = 'easy'; // 'easy' or 'hard'
+
+        function formatCurrency(amount) {
+            const num = parseFloat(amount);
+            if (isNaN(num)) return "$0.00";
+            return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })}`;
+        }
+
+        function formatPercentage(value) {
+            if (isNaN(value)) return 'N/A';
+            return `${value.toFixed(2)}%`;
+        }
+
+        function showScreen(screenElement) {
+            mainGameScreen.classList.add('hidden');
+            resultsScreen.classList.add('hidden');
+            difficultyScreen.classList.add('hidden');
+            leaderboardScreen.classList.add('hidden');
+            screenElement.classList.remove('hidden');
+        }
+
+        function showModal(modalElement) { modalElement.classList.add('active'); }
+        function hideModal(modalElement) { modalElement.classList.remove('active'); }
+
+        function showMessage(title, text) {
+            messageModalTitle.textContent = title;
+            messageModalText.textContent = text;
+            showModal(messageModal);
+        }
+
+        function initGame() {
+            gameState = {
+                cash: INITIAL_CASH,
+                portfolio: [],
+                gameEnded: false
+            };
+            renderAllStocks();
+            updatePieChart();
+            updateAvailableCashDisplay();
+            showScreen(mainGameScreen);
+            mainGameScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (originalMessageModalCloseAction) {
+                messageModalCloseBtn.onclick = originalMessageModalCloseAction;
+            } else {
+                originalMessageModalCloseAction = () => hideModal(messageModal);
+                messageModalCloseBtn.onclick = originalMessageModalCloseAction;
+            }
+            floatingDashboard.classList.add('visible-floating-dashboard');
+        }
+
+        function updateDashboard() {
+            skipsLeftEl.textContent = gameState.skipsLeft;
+            currentDateEl.textContent = `May ${1 + Math.floor(gameState.currentDecision * (30/TOTAL_DECISIONS))}, 2020`;
+
+            decisionsMadeCountEl.textContent = gameState.currentDecision + 1;
+            const progress = ((gameState.currentDecision + 1) / TOTAL_DECISIONS) * 100;
+            gameProgressBarEl.style.width = `${progress}%`;
+
+            investBtn.disabled = gameState.gameEnded || !gameState.availableStocks[gameState.currentStockIndex];
+            skipBtn.disabled = gameState.gameEnded || gameState.skipsLeft <= 0 || !gameState.availableStocks[gameState.currentStockIndex];
+
+            updateFloatingDashboard();
+        }
+
+        function updateFloatingDashboard() {
+            floatingCashValue.textContent = formatCurrency(gameState.cash);
+            floatingDecisionsMade.textContent = gameState.currentDecision;
+            floatingSkipsLeft.textContent = gameState.skipsLeft;
+        }
+
+        function createMetricItem(label, value, unit = '', tooltipText = '') {
+            const tooltipHtml = tooltipText ? `<span class="tooltiptext">${tooltipText}</span>` : '';
+            const infoIconHtml = tooltipText ? '<i class="fas fa-info-circle text-lg ml-2 text-accent-orange"></i>' : '';
+            return `
+                <div class="flex justify-between items-center py-2.5 border-b border-bg-tertiary last:border-b-0">
+                    <span class="text-muted tooltip">${label} ${infoIconHtml} ${tooltipHtml}</span>
+                    <span class="metric-value">${value !== undefined && value !== null && !isNaN(parseFloat(value)) ? value : 'N/A'}${unit}</span>
+                </div>
+            `;
+        }
+
+        function getMetricTooltip(metricKey) {
+            const tooltips = {
+                peRatio: "Price-to-Earnings ratio, shows how much investors pay per dollar of earnings. 15-25 is reasonable, above 30 might be expensive.",
+                psRatio: "Price-to-Sales ratio, indicates how much investors pay per dollar of sales. Lower values might suggest undervaluation.",
+                revenueGrowth: "Year-over-year sales growth. 5-10% is solid, 10-20% is strong, above 20% is exceptional.",
+                marketCap: "Market Capitalization, the total value of the company's shares. Reflects size and market perception.",
+                profitMargins: "Percentage of revenue kept as profit. Above 10% is good, above 20% is excellent."
+            };
+            return tooltips[metricKey] || '';
+        }
+
+        function displayStockCard(stock) {
+            if (!stock) {
+                stockCardContainer.innerHTML = `<p class="text-center text-muted">No more stocks available for this session.</p>`;
+                investBtn.disabled = true;
+                skipBtn.disabled = true;
+                return;
+            }
+
+            if (currentStockChart) currentStockChart.destroy();
+
+            // Add difficulty class to the container
+            stockCardContainer.className = `card w-full max-w-full md:max-w-5xl ${gameDifficulty}-mode-card`;
+
+            stockCardContainer.innerHTML = `
+                <h2 class="text-2xl font-bold mb-1 text-center">Undisclosed Company</h2>
+                <div class="flex justify-center items-center mb-3">
+                    <span class="text-sm text-muted mr-2">Sector:</span>
+                    <span class="badge" id="sector-badge">${stock.sector}</span>
+                </div>
+                ${gameDifficulty === 'easy' ? `<p class="text-sm text-center text-muted mb-3" id="company-description">${stock.metrics.description}</p>` : ''}
+                <div class="flex flex-col md:flex-row gap-4 mb-4">
+                    ${gameDifficulty === 'easy' ? `
+                    <div class="w-full md:w-1/2">
+                        <div id="stock-chart-container" class="h-64 md:h-80">
+                            <canvas id="stock-price-chart"></canvas>
+                        </div>
+                        <p class="text-center text-sm text-muted mt-2" id="historical-performance">Historical Performance (approx. ${stock.historicalPrices[0].date.split('-')[0]} - May 2020): <span class="${stock.historicalPerformanceTo2020 >= 0 ? 'profit' : 'loss'} font-roboto-mono">${formatPercentage(stock.historicalPerformanceTo2020)}</span></p>
+                    </div>
+                    <div class="w-full md:w-1/2">` : '<div class="w-full">'}
+                        <div id="metrics-section">
+                            <h3 class="text-lg font-bold mb-3">Key Metrics (as of Q1 2020 / FY19):</h3>
+                            ${createMetricItem('PE Ratio', stock.metrics.peRatio, '', getMetricTooltip('peRatio'))}
+                            ${createMetricItem('Revenue Growth', stock.metrics.revenueGrowth, '%', getMetricTooltip('revenueGrowth'))}
+                            ${createMetricItem('Market Cap', stock.metrics.marketCap, '', getMetricTooltip('marketCap'))}
+                            ${createMetricItem('Profit Margin', stock.metrics.profitMargins, '%', getMetricTooltip('profitMargins'))}
+                        </div>
+                    </div>
+                </div>
+                <p class="text-center text-xl" id="stock-price">Price (May 2020): <span class="font-roboto-mono text-primary-accent">${formatCurrency(stock.priceMay2020)}</span></p>
+            `;
+
+            // Only create chart in easy mode
+            if (gameDifficulty === 'easy') {
+            const ctx = document.getElementById('stock-price-chart').getContext('2d');
+            currentStockChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: stock.historicalPrices.map(p => p.date),
+                    datasets: [{
+                        label: 'Price ($)',
+                        data: stock.historicalPrices.map(p => p.price),
+                        borderColor: '#3498DB',
+                        tension: 0.1,
+                        pointBackgroundColor: '#2ECC71',
+                        pointBorderColor: '#FFFFFF',
+                        pointHoverBackgroundColor: '#2C3E50',
+                        pointHoverBorderColor: '#2ECC71',
+                        borderWidth: 2,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Date', color: '#2C3E50' }, ticks: { color: '#2C3E50' }, grid: { color: 'rgba(0, 0, 0, 0.1)' } },
+                        y: { title: { display: true, text: 'Price ($)', color: '#2C3E50' }, ticks: { color: '#2C3E50' }, grid: { color: 'rgba(0, 0, 0, 0.1)' } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Historical Price Trend (approx. 2015-2020)', color: '#2C3E50', font: { size: 16 } },
+                        tooltip: { backgroundColor: '#E0E0E0', titleColor: '#2C3E50', bodyColor: '#2C3E50', borderColor: '#3498DB', borderWidth: 1 }
+                    }
+                }
+            });
+            }
+
+            if (gameState.currentDecision === 0) {
+                startTutorial();
+            }
+        }
+
+        function loadNextStock() {
+            if (gameState.currentDecision >= TOTAL_DECISIONS) {
+                endGame();
+                return;
+            }
+            const currentStock = gameState.availableStocks[gameState.currentStockIndex];
+            displayStockCard(currentStock);
+            updateDashboard();
+        }
+
+        function handleInvest() {
+            const stock = gameState.availableStocks[gameState.currentStockIndex];
+            if (!stock || gameState.gameEnded) return;
+            if (gameState.cash <= 0.01) {
+                showMessage("No Cash", "You have no cash left to invest! The game will now end.");
+                messageModalCloseBtn.onclick = () => {
+                    hideModal(messageModal);
+                    endGame();
+                    messageModalCloseBtn.onclick = originalMessageModalCloseAction;
+                };
+                return;
+            }
+            modalCashAvailable.textContent = formatCurrency(gameState.cash);
+            modalStockPrice.textContent = formatCurrency(stock.priceMay2020);
+            investmentAmountInput.value = '';
+            remainingCashAfterInvestmentEl.textContent = formatCurrency(gameState.cash);
+            remainingCashAfterInvestmentEl.classList.remove('loss', 'profit');
+            remainingCashAfterInvestmentEl.classList.add('text-primary-accent');
+            investmentAmountInput.max = gameState.cash;
+            showModal(investModal);
+            investmentAmountInput.oninput = () => {
+                const inputVal = investmentAmountInput.value.trim();
+                if (inputVal === '') {
+                    remainingCashAfterInvestmentEl.textContent = formatCurrency(gameState.cash);
+                    remainingCashAfterInvestmentEl.classList.remove('loss', 'profit');
+                    remainingCashAfterInvestmentEl.classList.add('text-primary-accent');
+                    return;
+                }
+                let amount = parseFloat(inputVal);
+                if (isNaN(amount) || amount < 0) {
+                    remainingCashAfterInvestmentEl.textContent = formatCurrency(gameState.cash);
+                    remainingCashAfterInvestmentEl.classList.remove('loss', 'profit');
+                    remainingCashAfterInvestmentEl.classList.add('text-primary-accent');
+                    return;
+                }
+                const effectiveAmount = Math.min(amount, gameState.cash);
+                const remainingCash = gameState.cash - effectiveAmount;
+                remainingCashAfterInvestmentEl.textContent = formatCurrency(remainingCash);
+                remainingCashAfterInvestmentEl.classList.remove('loss', 'profit');
+                remainingCashAfterInvestmentEl.classList.add('text-primary-accent');
+            };
+        }
+
+        function confirmInvestment() {
+            const stock = gameState.availableStocks[gameState.currentStockIndex];
+            let amountToInvest = parseFloat(investmentAmountInput.value);
+            if (isNaN(amountToInvest) || amountToInvest <= 0) {
+                showMessage("Invalid Amount", "Please enter a positive amount to invest.");
+                return;
+            }
+            if (amountToInvest > gameState.cash) {
+                showMessage("Insufficient Funds", "You don't have enough cash for this investment.");
+                return;
+            }
+            gameState.cash -= amountToInvest;
+            gameState.portfolio.push({
+                stockId: stock.id,
+                companyName: stock.companyName,
+                ticker: stock.ticker,
+                investedAmount: amountToInvest,
+                purchasePrice: stock.priceMay2020,
+                finalPrice: stock.price2025
+            });
+            hideModal(investModal);
+            if (gameState.cash <= 0.01) {
+                showMessage("Cash Exhausted!", "You've invested all your cash! The game will now end.");
+                messageModalCloseBtn.onclick = () => {
+                    hideModal(messageModal);
+                    endGame();
+                    messageModalCloseBtn.onclick = originalMessageModalCloseAction;
+                };
+                return;
+            }
+            proceedToNextDecision();
+        }
+
+        function handleSkip() {
+            if (gameState.gameEnded) { // If game has already ended, do nothing.
+                return;
+            }
+
+            if (gameState.skipsLeft > 0) { // User has skips
+                gameState.skipsLeft--;
+                // updateDashboard(); // Dashboard is updated in loadNextStock via proceedToNextDecision
+
+                // Check if using this skip means there are no more stocks in the predefined queue.
+                if (gameState.currentStockIndex + 1 >= gameState.availableStocks.length) {
+                    showMessage(
+                        "No More Stock Opportunities",
+                        "You\'ve used a skip, but there are no more unique stock opportunities available in this game session. The game will now end."
+                    );
+                    messageModalCloseBtn.onclick = () => {
+                        hideModal(messageModal);
+                        endGame();
+                        messageModalCloseBtn.onclick = originalMessageModalCloseAction; // Reset to default
+                    };
+                    return; // Important: stop further execution in this function
+                }
+                proceedToNextDecision();
+            } else { // No skips left (gameState.skipsLeft <= 0)
+                showMessage(
+                    "No Skips Remaining",
+                    "You have no skips left. Please make an investment decision for the current stock."
+                );
+                // Ensure the 'OK' button on this message modal simply closes it,
+                // allowing the user to return to the current stock decision.
+                        messageModalCloseBtn.onclick = originalMessageModalCloseAction;
+            }
+        }
+
+        function proceedToNextDecision() {
+            gameState.currentDecision++;
+            gameState.currentStockIndex++;
+            loadNextStock();
+        }
+
+        function calculateCurrentPortfolioValue(useFinalPrices = false) {
+            return gameState.portfolio.reduce((total, investment) => {
+                const growthFactor = investment.finalPrice / investment.purchasePrice;
+                const currentInvestmentValue = investment.investedAmount * (useFinalPrices ? growthFactor : 1);
+                return total + currentInvestmentValue;
+            }, 0);
+        }
+
+        function endGame() {
+            if (gameState.gameEnded) return;
+            gameState.gameEnded = true;
+            investBtn.disabled = true;
+            skipBtn.disabled = true;
+            floatingDashboard.classList.remove('visible-floating-dashboard');
+            const finalPortfolioValue = gameState.cash + calculateCurrentPortfolioValue(true);
+            const totalAssets = finalPortfolioValue;
+            const totalReturn = totalAssets - INITIAL_CASH;
+            const totalReturnPercentage = INITIAL_CASH === 0 ? 0 : (totalReturn / INITIAL_CASH) * 100;
+            const sp500Return = ((SP500_PERFORMANCE.current2025_end_value - SP500_PERFORMANCE.may2020_start_value) / SP500_PERFORMANCE.may2020_start_value) * 100;
+
+            finalPortfolioValueEl.textContent = formatCurrency(finalPortfolioValue);
+            finalPortfolioValueEl.classList.remove('profit', 'loss');
+            finalPortfolioValueEl.classList.add('text-primary-accent');
+            totalReturnEl.textContent = formatPercentage(totalReturnPercentage);
+            totalReturnEl.classList.remove('profit', 'loss');
+            totalReturnEl.classList.add(totalReturnPercentage >= 0 ? 'profit' : 'loss');
+            sp500ReturnEl.textContent = formatPercentage(sp500Return);
+            sp500ReturnEl.classList.remove('profit', 'loss');
+            sp500ReturnEl.classList.add(sp500Return >= 0 ? 'profit' : 'loss');
+            const performanceDifference = totalReturnPercentage - sp500Return;
+            performanceVsSp500El.textContent = `${performanceDifference >= 0 ? '+' : ''}${formatPercentage(performanceDifference)}`;
+            performanceVsSp500El.classList.remove('profit', 'loss');
+            performanceVsSp500El.classList.add(performanceDifference >= 0 ? 'profit' : 'loss');
+            performanceVsSp500El.textContent += ` ${performanceDifference >= 0 ? 'Above' : 'Below'} S&P 500`;
+
+            investmentsListEl.innerHTML = '';
+            if (gameState.portfolio.length === 0) {
+                investmentsListEl.innerHTML = '<p class="text-center text-muted py-4">No investments made.</p>';
+            } else {
+                gameState.portfolio.forEach(investment => {
+                    const initialInvestmentAmount = investment.investedAmount;
+                    const finalInvestmentValue = investment.investedAmount * (investment.finalPrice / investment.purchasePrice);
+                    const profitLoss = finalInvestmentValue - initialInvestmentAmount;
+                    const percentageChange = (initialInvestmentAmount === 0) ? 0 : (profitLoss / initialInvestmentAmount) * 100;
+                    const changeClass = percentageChange >= 0 ? 'profit' : 'loss';
+                    const stockData = STOCKS_DATA.find(s => s.id === investment.stockId);
+                    const stockDescription = stockData ? stockData.metrics.description : 'N/A';
+
+                    investmentsListEl.innerHTML += `
+                        <div class="investment-item flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-4 rounded-lg shadow-md border-l-4 ${percentageChange >= 0 ? 'border-green-400' : 'border-red-400'} hover:transform hover:scale-[1.02] transition-all duration-200">
+                            <div class="mb-2 md:mb-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <i class="fas fa-building text-primary-accent"></i>
+                                    <p class="font-bold text-lg">${investment.companyName} (<span class="text-primary-accent">${investment.ticker}</span>)</p>
+                                </div>
+                                <p class="text-sm text-muted italic leading-tight flex items-center gap-2">
+                                    <i class="fas fa-info-circle text-accent-orange"></i>
+                                    ${stockDescription}
+                                </p>
+                                <p class="text-sm mt-2 flex items-center gap-2">
+                                    <i class="fas fa-wallet text-primary-accent"></i>
+                                    <span class="text-muted">Initial Investment:</span>
+                                    <span class="font-roboto-mono text-primary-accent">${formatCurrency(initialInvestmentAmount)}</span>
+                                    <span class="text-muted">(2020)</span>
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <p class="investment-value font-roboto-mono ${changeClass} text-xl font-bold flex items-center justify-end gap-2">
+                                    <i class="fas ${percentageChange >= 0 ? 'fa-arrow-trend-up text-green-500' : 'fa-arrow-trend-down text-red-500'}"></i>
+                                    ${formatCurrency(finalInvestmentValue)}
+                                </p>
+                                <p class="text-lg ${changeClass} font-semibold">
+                                    (${percentageChange >= 0 ? '+' : ''}${formatPercentage(percentageChange)})
+                                </p>
+                                <p class="text-sm text-muted flex items-center justify-end gap-1">
+                                    <i class="far fa-clock"></i>
+                                    Value in 2025
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            showScreen(resultsScreen);
+            
+            // Show leaderboard popup automatically after a short delay
+            setTimeout(() => {
+                popupPlayerNameInput.value = '';
+                showModal(leaderboardPopup);
+            }, 500);
+        }
+
+        async function saveScore() {
+            const playerName = popupPlayerNameInput.value.trim();
+            if (playerName === "") {
+                showMessage("Name Required", "Please enter your name to save your score.");
+                return;
+            }
+            
+            const finalValue = gameState.cash + calculateCurrentPortfolioValue(true);
+            const currentDifficulty = gameDifficulty; // Capture current difficulty
+            
+            // Save score to backend only, no localStorage fallback
+            try {
+                const response = await fetch('http://localhost:3001/api/leaderboard', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: playerName,
+                        score: finalValue,
+                        difficulty: currentDifficulty // Add difficulty
+                    })
+                });
+                if (response.ok) {
+                    hideModal(leaderboardPopup);
+                    showMessage("Score Saved!", `Your score for ${currentDifficulty} mode has been saved to the database leaderboard.`);
+                    messageModalCloseBtn.onclick = () => {
+                        hideModal(messageModal);
+                        // User remains on results screen
+                        messageModalCloseBtn.onclick = originalMessageModalCloseAction;
+                    };
+                    return;
+                } else {
+                    showMessage("Error", "Failed to save score to the leaderboard. Please try again later.");
+                    return;
+                }
+            } catch (error) {
+                showMessage("Error", "Could not connect to the leaderboard server. Please try again later.");
+                return;
+            }
+        }
+
+        async function viewLeaderboard(difficulty) {
+            if (!difficulty) {
+                console.error("Difficulty not provided to viewLeaderboard. Defaulting to current game difficulty.");
+                difficulty = gameDifficulty; // Fallback to current game's difficulty
+            }
+            leaderboardScoresEl.innerHTML = '<p class="text-center text-muted py-4">Loading leaderboard...</p>';
+            // The main title will be set by displayLeaderboard
+            try {
+                const response = await fetch(`http://localhost:3001/api/leaderboard?difficulty=${difficulty}`);
+                if (response.ok) {
+                    const leaderboard = await response.json();
+                    displayLeaderboard(leaderboard, difficulty, 'Database');
+                    return;
+                } else {
+                    leaderboardScoresEl.innerHTML = '<p class="text-center text-danger py-4">Failed to load leaderboard from server.</p>';
+                    return;
+                }
+            } catch (error) {
+                leaderboardScoresEl.innerHTML = '<p class="text-center text-danger py-4">Could not connect to leaderboard server.</p>';
+                return;
+            }
+        }
+        
+        function displayLeaderboard(leaderboard, difficulty, sourceType) {
+            const capitalizedDifficulty = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+            const title = `Leaderboard (${capitalizedDifficulty} Mode) - ${sourceType}`;
+            document.querySelector('#leaderboard-screen h1').textContent = title;
+
+            leaderboardScoresEl.innerHTML = ''; // Clear previous scores or loading message
+            
+            if (leaderboard.length === 0) {
+                leaderboardScoresEl.innerHTML = '<p class="text-center text-muted py-4">No scores yet. Be the first!</p>';
+            } else {
+                leaderboard.forEach((entry, index) => {
+                    leaderboardScoresEl.innerHTML += `
+                        <div class="investment-item flex justify-between items-center">
+                            <span class="font-semibold text-lg">${index + 1}. ${entry.name}</span>
+                            <span class="font-roboto-mono text-primary-accent text-lg">${formatCurrency(entry.score)}</span>
+                        </div>
+                    `;
+                });
+            }
+            
+            showScreen(leaderboardScreen);
+        }
+
+        const tutorialSteps = [
+            {
+                elementSelector: '#company-description',
+                text: 'This is the company description. It gives you a brief overview of what the company does.'
+            },
+            {
+                elementSelector: '#sector-badge',
+                text: 'The sector badge shows the industry the company operates in. Different sectors have different risks and growth potentials.'
+            },
+            {
+                elementSelector: '#stock-chart-container',
+                text: 'This chart shows the historical stock price performance from approximately 2015 to May 2020. Look for trends or patterns.'
+            },
+            {
+                elementSelector: '#metrics-section',
+                text: 'Here are the key financial metrics. These help you evaluate the company\'s valuation, growth, and profitability.'
+            },
+            {
+                elementSelector: '#stock-price',
+                text: 'This is the stock price as of May 2020, which is when you\'ll be making your investment decision.'
+            },
+            {
+                elementSelector: '#invest-btn',
+                text: 'Click this button to invest in the stock. You\'ll be prompted to enter the amount you want to invest.'
+            },
+            {
+                elementSelector: '#skip-btn',
+                text: 'If you don\'t want to invest in this stock, you can skip to the next opportunity. But remember, you have limited skips.'
+            }
+        ];
+
+        let currentTutorialStep = null;
+
+        function startTutorial() {
+            if (localStorage.getItem('tutorialSkipped') === 'true') {
+                return;
+            }
+            currentTutorialStep = 0;
+            showTutorialStep(currentTutorialStep);
+            investBtn.disabled = true;
+            skipBtn.disabled = true;
+        }
+
+        function showTutorialStep(stepIndex) {
+            if (stepIndex >= tutorialSteps.length) {
+                endTutorial();
+                return;
+            }
+            if (currentTutorialStep !== null) {
+                const prevElement = document.querySelector(tutorialSteps[currentTutorialStep].elementSelector);
+                if (prevElement) {
+                    prevElement.classList.remove('highlight');
+                }
+            }
+            currentTutorialStep = stepIndex;
+            const step = tutorialSteps[stepIndex];
+            const element = document.querySelector(step.elementSelector);
+            if (!element) {
+                console.error('Tutorial element not found:', step.elementSelector);
+                endTutorial();
+                return;
+            }
+            element.classList.add('highlight');
+            const rect = element.getBoundingClientRect();
+            const popup = document.getElementById('tutorial-popup');
+            popup.innerHTML = `
+                <p>${step.text}</p>
+                <div class="flex justify-between mt-4">
+                    <button id="skip-tutorial-btn" class="btn btn-secondary">Skip Tutorial</button>
+                    <button id="next-tutorial-btn" class="btn btn-primary">${stepIndex < tutorialSteps.length - 1 ? 'Next' : 'Finish'}</button>
+                </div>
+            `;
+            if (stepIndex === tutorialSteps.length - 1) {
+                popup.innerHTML += `
+                    <label class="text-sm text-muted mt-2">
+                        <input type="checkbox" id="dont-show-again"> Don't show this tutorial again
+                    </label>
+                `;
+            }
+            const top = rect.bottom + window.scrollY + 10;
+            const left = rect.left + window.scrollX;
+            popup.style.top = `${top}px`;
+            popup.style.left = `${left}px`;
+            popup.style.display = 'block';
+            document.getElementById('next-tutorial-btn').addEventListener('click', () => {
+                if (stepIndex === tutorialSteps.length - 1) {
+                    const dontShowAgain = document.getElementById('dont-show-again')?.checked;
+                    if (dontShowAgain) {
+                        localStorage.setItem('tutorialSkipped', 'true');
+                    }
+                }
+                showTutorialStep(stepIndex + 1);
+            });
+            document.getElementById('skip-tutorial-btn').addEventListener('click', () => {
+                localStorage.setItem('tutorialSkipped', 'true');
+                endTutorial();
+            });
+        }
+
+        function endTutorial() {
+            const popup = document.getElementById('tutorial-popup');
+            popup.style.display = 'none';
+            if (currentTutorialStep !== null) {
+                const currentElement = document.querySelector(tutorialSteps[currentTutorialStep].elementSelector);
+                if (currentElement) {
+                    currentElement.classList.remove('highlight');
+                }
+                currentTutorialStep = null;
+            }
+            investBtn.disabled = false;
+            skipBtn.disabled = false;
+        }
+
+        // Event Listeners
+        investBtn.addEventListener('click', handleInvest);
+        skipBtn.addEventListener('click', handleSkip);
+        cancelInvestmentBtn.addEventListener('click', () => hideModal(investModal));
+        confirmInvestmentBtn.addEventListener('click', confirmInvestment);
+        saveToLeaderboardBtn.addEventListener('click', saveScore);
+        playAgainBtn.addEventListener('click', () => showScreen(difficultyScreen));
+        backToWelcomeBtn.addEventListener('click', () => window.location.href = 'index.html');
+        learnModalCloseBtn.addEventListener('click', () => hideModal(learnModal));
+        easyModeBtn.addEventListener('click', () => startGame('easy'));
+        hardModeBtn.addEventListener('click', () => startGame('hard'));
+        viewLeaderboardsBtnResults.addEventListener('click', () => viewLeaderboard(gameDifficulty));
+
+        function startGame(difficulty) {
+            gameDifficulty = difficulty;
+            showScreen(mainGameScreen); // Ensure only the main game screen is visible
+            initGame();
+        }
+
+        // Initialize Game
+        document.addEventListener('DOMContentLoaded', () => {
+            Chart.defaults.color = 'var(--color-text-primary)';
+            showScreen(difficultyScreen); // Only show difficulty screen on load
+        });
+
+        // ... existing code ...
+        // Remove old invest/skip logic and add new all-stocks-at-once logic
+        let investmentInputs = {};
+        let pieChart = null;
+
+        function renderAllStocks() {
+            const container = document.getElementById('all-stocks-list');
+            container.innerHTML = '';
+            investmentInputs = {};
+            let stocks = [...STOCKS_DATA].sort((a, b) => a.companyName.localeCompare(b.companyName));
+            stocks.forEach(stock => {
+                const stockId = stock.id;
+                investmentInputs[stockId] = 0;
+                const metricsHtml = `
+                    <div class='bg-white p-4 rounded-xl shadow border border-blue-100 mb-2'>
+                        <div class='flex items-center gap-2 mb-2'>
+                            <span class='badge'>${stock.sector}</span>
+                            <span class='font-bold text-lg'>${stock.companyName} <span class='text-primary-accent'>(${stock.ticker})</span></span>
+                        </div>
+                        ${gameDifficulty === 'easy' ? `<p class='text-sm text-muted mb-2'>${stock.metrics.description}</p>` : ''}
+                        <div class='grid grid-cols-2 gap-2 mb-2'>
+                            <div><span class='text-muted'>PE Ratio:</span> <span class='font-roboto-mono'>${stock.metrics.peRatio}</span></div>
+                            <div><span class='text-muted'>Revenue Growth:</span> <span class='font-roboto-mono'>${stock.metrics.revenueGrowth}%</span></div>
+                            <div><span class='text-muted'>Market Cap:</span> <span class='font-roboto-mono'>${stock.metrics.marketCap}</span></div>
+                            <div><span class='text-muted'>Profit Margin:</span> <span class='font-roboto-mono'>${stock.metrics.profitMargins}%</span></div>
+                        </div>
+                        <div class='flex items-center gap-2 mb-2'>
+                            <span class='text-muted'>Price (May 2020):</span> <span class='font-roboto-mono text-primary-accent'>${formatCurrency(stock.priceMay2020)}</span>
+                        </div>
+                        <div class='flex items-center gap-2'>
+                            <label for='invest-input-${stockId}' class='text-muted'>Invest ($):</label>
+                            <input type='number' id='invest-input-${stockId}' min='0' step='0.01' value='0' class='w-32 p-2 rounded border border-gray-300 font-roboto-mono' />
+                        </div>
+                    </div>
+                `;
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = metricsHtml;
+                container.appendChild(wrapper);
+            });
+            // Add input listeners
+            stocks.forEach(stock => {
+                const input = document.getElementById(`invest-input-${stock.id}`);
+                input.addEventListener('input', () => {
+                    let val = parseFloat(input.value);
+                    if (isNaN(val) || val < 0) val = 0;
+                    investmentInputs[stock.id] = val;
+                    updatePieChart();
+                    updateAvailableCashDisplay();
+                });
+            });
+        }
+
+        function updatePieChart() {
+            const ctx = document.getElementById('portfolio-pie-chart').getContext('2d');
+            const invested = Object.entries(investmentInputs).filter(([_, v]) => v > 0);
+            const labels = invested.map(([id]) => STOCKS_DATA.find(s => s.id === id).ticker);
+            const data = invested.map(([_, v]) => v);
+            const bgColors = invested.map(([id], i) => `hsl(${(i * 360 / invested.length)}, 70%, 60%)`);
+            if (pieChart) pieChart.destroy();
+            pieChart = new Chart(ctx, {
+                type: 'pie',
+                data: { labels, datasets: [{ data, backgroundColor: bgColors }] },
+                options: {
+                    plugins: {
+                        legend: { display: true, position: 'bottom' },
+                        title: { display: true, text: 'Portfolio Allocation', font: { size: 18 } }
+                    }
+                }
+            });
+        }
+
+        function updateAvailableCashDisplay() {
+            const totalInvested = Object.values(investmentInputs).reduce((a, b) => a + b, 0);
+            floatingCashValue.textContent = formatCurrency(INITIAL_CASH - totalInvested);
+        }
+
+        function confirmAllInvestments() {
+            const totalInvested = Object.values(investmentInputs).reduce((a, b) => a + b, 0);
+            if (totalInvested > INITIAL_CASH) {
+                showMessage('Over Budget', 'Your total investments exceed your available cash. Please adjust.');
+                return;
+            }
+            // Build portfolio
+            gameState.portfolio = Object.entries(investmentInputs)
+                .filter(([_, v]) => v > 0)
+                .map(([id, investedAmount]) => {
+                    const stock = STOCKS_DATA.find(s => s.id === id);
+                    return {
+                        stockId: stock.id,
+                        companyName: stock.companyName,
+                        ticker: stock.ticker,
+                        investedAmount,
+                        purchasePrice: stock.priceMay2020,
+                        finalPrice: stock.price2025
+                    };
+                });
+            gameState.cash = INITIAL_CASH - totalInvested;
+            endGame();
+        }
+
+        document.getElementById('confirm-investments-btn').addEventListener('click', confirmAllInvestments);
+        // ... existing code ...
+    </script>
+</body>
+</html>
